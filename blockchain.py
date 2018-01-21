@@ -207,8 +207,8 @@ def new_transactions():
         return "Missing values", 400
 
     # 创建新的交易(Transaction)
-    index = blockchain.new_transaction(values['sender'], values['recipienr'], values['amount'])
-    response = {'message': f'Transcation will be added to Block {index}'}
+    index = blockchain.new_transaction(values['sender'], values['recipient'], values['amount'])
+    response = {'message': f'Transaction will be added to Block {index}'}
     return jsonify(response), 201
 
 
@@ -219,6 +219,44 @@ def full_chain():
         'length': len(blockchain.chain)
     }
     return jsonify(response), 200
+
+
+@app.route('/nodes/register', methods=['POST'])
+def register_nodes():
+    values = request.get_json()
+    nodes = values.get('nodes')
+    if nodes is None:
+        return "Error: please supply a valid list of nodes", 400
+
+    for node in nodes:
+        blockchain.register_node(node)
+
+    response = {
+        'message': 'New nodes have been added',
+        'total_nodes': list(blockchain.nodes),
+    }
+    return jsonify(response), 201
+
+
+@app.route('/nodes/resolve', methods=['GET'])
+def consensus():
+    replaced = blockchain.resolve_conflicts()
+    if replaced:
+        response = {
+            'message': 'Our chain was replaced',
+            'new_chain': blockchain.chain
+        }
+    else:
+        response = {
+            'message': 'Our chain is authoritative',
+            'chain': blockchain.chain
+        }
+    return jsonify(response), 200
+
+
+@app.route('/nodes', methods=['GET'])
+def nodes():
+    return jsonify(list(blockchain.nodes)), 200
 
 
 if __name__ == '__main__':
